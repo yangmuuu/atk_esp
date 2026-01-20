@@ -1,9 +1,11 @@
 set(src_dirs
 		KEY
+		EXIT
         LED)
 
 set(include_dirs
 		KEY
+		EXIT
         LED)
 
 set(requires
