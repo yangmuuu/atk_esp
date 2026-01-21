@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+/home/m/Project/ATK/06_GPTIM/build/CMakeFiles/bootloader
+/home/m/Project/ATK/06_GPTIM/build/CMakeFiles/bootloader.rule
+/home/m/Project/ATK/06_GPTIM/build/CMakeFiles/bootloader-complete.rule
+/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule

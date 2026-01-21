@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/CMakeFiles/bootloader"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/CMakeFiles/bootloader.rule"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/CMakeFiles/bootloader-complete.rule"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
+		},
+		{
+			"file" : "/home/m/Project/ATK/06_GPTIM/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"bootloader"
+		],
+		"name" : "bootloader"
+	}
+}

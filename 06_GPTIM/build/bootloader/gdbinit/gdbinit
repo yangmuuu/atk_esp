@@ -1,0 +1,2 @@
+source /home/m/Project/ATK/06_GPTIM/build/bootloader/gdbinit/symbols
+source /home/m/Project/ATK/06_GPTIM/build/bootloader/gdbinit/connect
