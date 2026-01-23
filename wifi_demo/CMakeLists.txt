@@ -2,5 +2,10 @@
 # CMakeLists in this exact order for cmake to work correctly
 cmake_minimum_required(VERSION 3.16)
 
+# 添加库目录
+set(EXTAR_COMPONENTS_DIRS components/Middlewares)
+# 报错带颜色
+add_compile_options(-fdiagnostics-color=always)
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(wifi_demo)
