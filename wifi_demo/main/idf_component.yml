@@ -15,3 +15,5 @@ dependencies:
   #   # All dependencies of `main` are public by default.
   #   public: true
   78/esp-wifi-connect: ^3.0.2
+  espressif/usb_stream: '*'
+  espressif/esp32_s3_usb_otg: ^2.0.4
