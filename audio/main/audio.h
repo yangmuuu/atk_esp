@@ -32,6 +32,6 @@ int audio_write(const int16_t* data, int samples);
  * @param samples 要求读取的数据长度，单位（字）
  * @return 实际读取的数据长度x，单位（字）
  */
-int audio_read(int16_t* dest, int samples);
+int audio_read(int16_t* data, int samples);
 
 #endif

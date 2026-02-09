@@ -17,13 +17,13 @@ typedef struct
     button_getleve_cb_t getlevel_cb;  //获取电平的回调函数
     button_press_cb_t short_cb;   //短按回调函数
     button_press_cb_t long_cb;    //长按回调函数
-}button_config_t;
+}bsp_button_config_t;
 
 /** 设置按键事件
  * @param cfg   配置结构体
  * @return ESP_OK or ESP_FAIL 
 */
-esp_err_t button_event_set(button_config_t *cfg);
+esp_err_t button_event_set(bsp_button_config_t *cfg);
 
 
 #endif

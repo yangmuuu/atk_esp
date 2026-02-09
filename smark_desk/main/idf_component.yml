@@ -14,9 +14,5 @@ dependencies:
   #   # `public` flag doesn't have an effect dependencies of the `main` component.
   #   # All dependencies of `main` are public by default.
   #   public: true
-  78/esp-wifi-connect: ^3.0.2
-  espressif/usb_stream: '*'
-  espressif/esp32_s3_usb_otg: ^2.0.4
-  espressif/esp_lvgl_port: ^2.7.0
-  espressif/esp_lcd_touch_ft5x06: ^1.1.0
   lvgl/lvgl: ^9.4.0
+  espressif/esp_lvgl_port: ^2.7.0

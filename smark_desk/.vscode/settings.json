@@ -14,7 +14,8 @@
   "clangd.arguments": [
     "--background-index",
     "--query-driver=**",
-    "--compile-commands-dir=/home/m/Project/ATK/audio/build"
+    "--compile-commands-dir=/home/m/Project/esp_demo/smark_desk/build"
 ],
-"idf.currentSetup": "/home/m/esp/v5.5.2/esp-idf"
+"idf.currentSetup": "/home/m/esp/v5.5.2/esp-idf",
+"idf.flashType": "UART"
 }

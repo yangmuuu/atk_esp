@@ -9,11 +9,13 @@
 static const char *TAG = "CAMERA";
 
 // 配置宏
-#define CAM_WIDTH       640
-#define CAM_HEIGHT      480
+//640
+#define CAM_WIDTH       320
+// 480
+#define CAM_HEIGHT      240
 #define CAM_FPS         15
-#define CAM_BUF_SIZE    (55 * 1024)
-#define CAM_FRAME_MAX   (60 * 1024)
+#define CAM_BUF_SIZE    (25 * 1024)
+#define CAM_FRAME_MAX   (30 * 1024)
 
 static uint8_t *xfer_buf_a = NULL;
 static uint8_t *xfer_buf_b = NULL;
