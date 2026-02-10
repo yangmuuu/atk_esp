@@ -24,9 +24,16 @@ void app_main(void)
     ESP_LOGI(TAG, "Hardware Init: XL9555");
     xl9555_init(XL9555_SDA, XL9555_SCL, GPIO_NUM_17, app_xl9555_input_cb);
     
-    // 配置输出引脚 (LCD复位, 背光, 触摸复位)
+    // 配置输出引脚:
+    // IO1_3: LCD复位
+    // IO1_2: LCD背光
+    // IO1_0: 触摸复位
+    // IO0_0: 喇叭功放使能 (本次新增)
     // 0xFFFF为全输入, 按位与操作清除对应位以设为输出
-    xl9555_ioconfig(0xFFFF & ~(IO1_3 | IO1_2 | IO1_0));
+    xl9555_ioconfig(0xFFFF & ~(IO1_3 | IO1_2 | IO1_0 | IO0_0));
+
+    // 默认关闭喇叭，防止上电瞬间产生爆音，等需要播放时由 audio 驱动打开
+    xl9555_pin_write(IO0_0, 0);
 
     // 初始化屏幕与触摸
     ESP_LOGI(TAG, "Hardware Init: LCD");

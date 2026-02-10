@@ -3,6 +3,7 @@ set(src_dirs
         XL9555
         CAMERA
 		LCD
+		AUDIO
 )
 
 set(include_dirs
@@ -10,6 +11,7 @@ set(include_dirs
         XL9555
         CAMERA
 		LCD
+		AUDIO
 )
 
 set(requires
