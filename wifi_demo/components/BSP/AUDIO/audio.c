@@ -20,11 +20,21 @@ esp_err_t audio_init(void)
 {
     if (tx_handle) return ESP_OK;
 
-    ESP_LOGI(TAG, "Initializing Native I2S (Default DMA)...");
+    ESP_LOGI(TAG, "Initializing Native I2S (Moderate DMA)...");
 
-    // 1. 创建 I2S 通道 (使用默认配置，缓存很小)
+    // 1. 创建 I2S 通道
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
     chan_cfg.auto_clear_after_cb = true; 
+    
+    // ============================================================
+    // 【关键修改】适量的 DMA 缓存
+    // 之前是 16 (32KB) -> 导致内存不足炸 SSL
+    // 现在是 6 (12KB)  -> 既能抗网络抖动(约0.25秒缓冲)，又给SSL留了活路
+    // ============================================================
+    chan_cfg.dma_desc_num = 6;     
+    chan_cfg.dma_frame_num = 1024; 
+    // ============================================================
+
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &tx_handle, NULL));
 
     // 2. 配置 I2S 标准模式
@@ -60,8 +70,8 @@ int audio_write(const void *data, int len)
 {
     if (!tx_handle) return -1;
     size_t bytes_written = 0;
-    // 写入 I2S
-    esp_err_t ret = i2s_channel_write(tx_handle, data, len, &bytes_written, 1000);
+    // 写入 I2S，超时时间给足，让 DMA 慢慢消化
+    esp_err_t ret = i2s_channel_write(tx_handle, data, len, &bytes_written, 2000);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "I2S Write Failed: %s", esp_err_to_name(ret));
     }

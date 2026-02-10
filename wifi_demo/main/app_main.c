@@ -86,7 +86,7 @@ static char *build_omni_json(const char *base64_img)
 
     cJSON *text_obj = cJSON_CreateObject();
     cJSON_AddStringToObject(text_obj, "type", "text");
-    cJSON_AddStringToObject(text_obj, "text", "Describe this image in one short sentence.");
+    cJSON_AddStringToObject(text_obj, "text", "简单一句话描述这张图片");
     cJSON_AddItemToArray(content_arr, text_obj);
 
     cJSON_AddItemToObject(user_msg, "content", content_arr);
@@ -252,7 +252,7 @@ static void short_press(int gpio)
     ESP_LOGI(TAG, "Button Trigger: Start Omni Task");
     
     // 【当时的状态】20KB 栈
-    xTaskCreate(photo_action_task, "ai_task", 1024 * 20, NULL, 5, NULL);
+    xTaskCreate(photo_action_task, "ai_task", 1024 * 16, NULL, 5, NULL);
 }
 
 static void long_press(int gpio) { ESP_LOGI(TAG, "Long Press"); }
