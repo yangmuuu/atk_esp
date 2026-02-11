@@ -19,6 +19,7 @@ static const char *TAG = "CAMERA";
 static uint8_t *xfer_buf_a = NULL;
 static uint8_t *xfer_buf_b = NULL;
 static uint8_t *frame_buf = NULL;
+
 static bool is_mem_alloc = false;
 
 static SemaphoreHandle_t s_capture_sem = NULL;
