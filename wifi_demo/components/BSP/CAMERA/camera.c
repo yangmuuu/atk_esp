@@ -73,7 +73,7 @@ esp_err_t camera_init(void)
     return ESP_OK;
 }
 
-// 【暴力重启模式】配置 -> 启动 -> 拍照 -> 销毁
+// 配置 -> 启动 -> 拍照 -> 销毁
 camera_frame_t* camera_capture(void)
 {
     if (!is_mem_alloc) return NULL;
@@ -127,7 +127,7 @@ camera_frame_t* camera_capture(void)
         s_capture_req = false;
     }
 
-    // 6. 【关键】彻底停止并销毁，释放带宽给 Wi-Fi
+    // 6. 彻底停止并销毁，释放带宽给 Wi-Fi
     ESP_LOGI(TAG, "Powering OFF Camera...");
     usb_streaming_stop();
     // 稍微延时确保 USB 任务完全退出
@@ -145,5 +145,5 @@ void camera_free_frame(camera_frame_t *frame)
 }
 
 // 占位函数，保持兼容
-void camera_pause_stream(void) {}
-void camera_resume_stream(void) {}
+// void camera_pause_stream(void) {}
+// void camera_resume_stream(void) {}
