@@ -36,6 +36,47 @@ dependencies:
       registry_url: https://components.espressif.com
       type: service
     version: 0.5.3
+  espressif/dl_fft:
+    component_hash: 
+      7dadbd644c0d7ba4733cc3726ec4cff6edf27b043725e1115861dec1609a3d28
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 0.3.1
+  espressif/esp-dsp:
+    component_hash: 
+      42dce32d46ac93dc11f60d368e29a830e9661c7345d794b8a45c343479cae636
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.2'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.7.0
+  espressif/esp-sr:
+    component_hash: 
+      46b1f70f8b561714b958d1c455213cca07162755d1b8df53498081199f15136f
+    dependencies:
+    - name: espressif/dl_fft
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=0.2.0'
+    - name: espressif/esp-dsp
+      registry_url: https://components.espressif.com
+      require: private
+      version: 1.7.0
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 2.3.1
   espressif/esp32_s3_usb_otg:
     component_hash: 
       ae993844d03f2e73aa8e52e2d773704afa31f38e8d9d09df1d2c76416db8462d
@@ -91,7 +132,7 @@ dependencies:
     version: 1.1.0
   espressif/esp_lvgl_port:
     component_hash: 
-      f872401524cb645ee6ff1c9242d44fb4ddcfd4d37d7be8b9ed3f4e85a404efcd
+      88bbda87376ae20fabfbb5d794ed78d23b3b4a186ecfafecf2edbf06223fd6c9
     dependencies:
     - name: idf
       require: private
@@ -103,7 +144,7 @@ dependencies:
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 2.7.0
+    version: 2.7.1
   espressif/usb_stream:
     component_hash: 
       130b26080cb06ea826a4b9371b6ced927034ba0cbbe0a13bbe408d10d5ca2972
@@ -128,20 +169,21 @@ dependencies:
     version: 5.5.2
   lvgl/lvgl:
     component_hash: 
-      17e68bfd21f0edf4c3ee838e2273da840bf3930e5dbc3bfa6c1190c3aed41f9f
+      184e532558c1c45fefed631f3e235423d22582aafb4630f3e8885c35281a49ae
     dependencies: []
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 9.4.0
+    version: 9.5.0
 direct_dependencies:
 - 78/esp-wifi-connect
+- espressif/esp-sr
 - espressif/esp32_s3_usb_otg
 - espressif/esp_lcd_touch_ft5x06
 - espressif/esp_lvgl_port
 - espressif/usb_stream
 - idf
 - lvgl/lvgl
-manifest_hash: 24017dff9fe8e04d5e610463bafc6936b10884dade899d313c59501bfba21025
+manifest_hash: a932fa3ab07253321533bc8e9529ea1404bf9cae34dc80ced73967cd2c5f9117
 target: esp32s3
 version: 2.0.0

@@ -26,14 +26,8 @@ esp_err_t audio_init(void)
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
     chan_cfg.auto_clear_after_cb = true; 
     
-    // ============================================================
-    // 【关键修改】适量的 DMA 缓存
-    // 之前是 16 (32KB) -> 导致内存不足炸 SSL
-    // 现在是 6 (12KB)  -> 既能抗网络抖动(约0.25秒缓冲)，又给SSL留了活路
-    // ============================================================
     chan_cfg.dma_desc_num = 6;     
     chan_cfg.dma_frame_num = 1024; 
-    // ============================================================
 
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &tx_handle, NULL));
 

@@ -181,7 +181,6 @@ static void xl9555_intput_scan(void* param)
         {
             if ( gpio_get_level(xl9555_isr_io) != 0)
             {
-                continue;
             }
             ret = xl9555_read_word(XL9555_INPUT_PORT0_REG,&input);        //读取输入寄存器
             if(ret == ESP_OK)
@@ -241,7 +240,7 @@ void xl9555_init(gpio_num_t sda,gpio_num_t scl,gpio_num_t int_io,xl9555_input_cb
 
     if(xl9555_isr_io != GPIO_NUM_NC)
 	{
-        xl9555_isr_init();
+			xl9555_isr_init();
 		xTaskCreatePinnedToCore(xl9555_intput_scan,"xl9555",4096,NULL,3,NULL,1);
 	}
 }
