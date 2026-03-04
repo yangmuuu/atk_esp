@@ -25,9 +25,6 @@
 
 static const char *TAG = "APP_MAIN";
 
-static EventGroupHandle_t ws_event_group;
-#define WS_CONNECTED_BIT BIT0
-
 /* =====================================================================
  * 全局配置与状态变量
  * ===================================================================== */
@@ -73,11 +70,11 @@ static void app_ui_init(void)
     }
 }
 
-/* =====================================================================
- * 按键 2 - 阿里云 Omni 多模态
- * ===================================================================== */
 
- #if 1
+/* =====================================================================
+ * 【业务一】 按键 2 - 阿里云 Omni
+ * ===================================================================== */
+#if 1
 // 模型参数配置
 static char *build_omni_json(const char *base64_img)
 {
@@ -276,18 +273,14 @@ static void short_press_btn2(int gpio)
         xTaskCreateStatic(photo_action_task, "ai_task", 1024 * 16, NULL, 5, ai_stack, &ai_tcb);
     } else { ESP_LOGE(TAG, "致命错误：PSRAM 分配栈内存失败！"); }
 }
-
 #endif
 
-/* ------------------ 【业务一结束】 ------------------ */
 
 /* =====================================================================
- * 按键 3 - 服务器接口测试 (HTTP SSE)
+ * 【业务二】 按键 3 - 服务器接口测试 (HTTP SSE)
  * ===================================================================== */
-
 #if 1
-
-// 拼接sse数据
+// 拼接并解析 SSE base64 数据播放
 esp_err_t _test_http_event_handler(esp_http_client_event_t *evt)
 {
     switch (evt->event_id) {
@@ -329,7 +322,7 @@ esp_err_t _test_http_event_handler(esp_http_client_event_t *evt)
                             unsigned char *pcm_buf = heap_caps_malloc(b64_str_len, MALLOC_CAP_SPIRAM);
                             if (pcm_buf) {
                                 int ret = mbedtls_base64_decode(pcm_buf, b64_str_len, &out_len, 
-                                                              (const unsigned char *)data_ptr, b64_str_len);
+                                                      (const unsigned char *)data_ptr, b64_str_len);
                                 if (ret == 0 && out_len > 0) {
                                     audio_write(pcm_buf, out_len); // 阻塞写入播放
                                 } else if (ret != 0) {
@@ -422,123 +415,11 @@ static void short_press_btn3(int gpio)
         xTaskCreateStatic(text_to_audio_test_task, "test_task", 1024 * 16, NULL, 5, test_stack, &test_tcb);
     }
 }
-
 #endif
-
-/* ------------------ 【业务二结束】 ------------------ */
 
 
 /* =====================================================================
- * 按键 1 - 阿里云 WebSocket 实时 TTS 
- * ===================================================================== */
-#if 1
-static SemaphoreHandle_t tts_done_sem = NULL;
-static char *ws_rx_buffer = NULL; 
-
-static void ws_send_json(esp_websocket_client_handle_t client, cJSON *root) {
-    char *json_str = cJSON_PrintUnformatted(root);
-    if (json_str) {
-        esp_websocket_client_send_text(client, json_str, strlen(json_str), portMAX_DELAY);
-        free(json_str);
-    }
-    cJSON_Delete(root);
-}
-
-static void ali_tts_ws_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
-    esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
-    if (event_id == WEBSOCKET_EVENT_DATA && (data->op_code == 0x01 || data->op_code == 0x00)) {
-        if (data->payload_offset == 0) {
-            if (ws_rx_buffer) free(ws_rx_buffer);
-            ws_rx_buffer = heap_caps_malloc(data->payload_len + 1, MALLOC_CAP_SPIRAM);
-        }
-        if (ws_rx_buffer) memcpy(ws_rx_buffer + data->payload_offset, data->data_ptr, data->data_len);
-        if (ws_rx_buffer && (data->payload_offset + data->data_len >= data->payload_len)) {
-            ws_rx_buffer[data->payload_len] = '\0'; 
-            cJSON *root = cJSON_Parse(ws_rx_buffer);
-            if (root) {
-                cJSON *type = cJSON_GetObjectItem(root, "type");
-                if (type && type->valuestring) {
-                    if (strcmp(type->valuestring, "response.audio.delta") == 0) {
-                        cJSON *delta = cJSON_GetObjectItem(root, "delta");
-                        if (delta && delta->valuestring) {
-                            size_t b64_len = strlen(delta->valuestring);
-                            size_t out_len = 0;
-                            unsigned char *pcm_buf = heap_caps_malloc(b64_len * 3 / 4 + 16, MALLOC_CAP_SPIRAM);
-                            if (pcm_buf) {
-                                mbedtls_base64_decode(pcm_buf, b64_len, &out_len, (const unsigned char *)delta->valuestring, b64_len);
-                                if (out_len > 0) { audio_write(pcm_buf, out_len); }
-                                free(pcm_buf);
-                            }
-                        }
-                    } else if (strcmp(type->valuestring, "response.done") == 0) {
-                        ESP_LOGI(TAG, "阿里 TTS: 播放结束");
-                        if (tts_done_sem) xSemaphoreGive(tts_done_sem);
-                    }
-                }
-                cJSON_Delete(root);
-            }
-            free(ws_rx_buffer); ws_rx_buffer = NULL;
-        }
-    }
-}
-
-static void ali_realtime_tts_task(void *pvParameters) {
-    is_ai_busy = true;
-    if (tts_done_sem == NULL) tts_done_sem = xSemaphoreCreateBinary();
-    esp_websocket_client_config_t ws_cfg = {
-        .uri = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime?model=qwen3-tts-flash-realtime",
-        .buffer_size = 16384, .task_stack = 8192,
-        .crt_bundle_attach = esp_crt_bundle_attach,
-    };
-    esp_websocket_client_handle_t client = esp_websocket_client_init(&ws_cfg);
-    esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, ali_tts_ws_event_handler, (void *)client);
-    char auth_header[128];
-    snprintf(auth_header, sizeof(auth_header), "Bearer %s", API_KEY);
-    esp_websocket_client_append_header(client, "Authorization", auth_header);
-    esp_websocket_client_start(client);
-    vTaskDelay(pdMS_TO_TICKS(1000)); 
-
-    cJSON *update_req = cJSON_CreateObject();
-    cJSON_AddStringToObject(update_req, "type", "session.update");
-    cJSON *session = cJSON_CreateObject();
-    cJSON_AddStringToObject(session, "voice", "Cherry");
-    cJSON_AddStringToObject(session, "mode", "server_commit");
-    cJSON_AddStringToObject(session, "response_format", "pcm");
-    cJSON_AddNumberToObject(session, "sample_rate", 24000); 
-    cJSON_AddItemToObject(update_req, "session", session);
-    ws_send_json(client, update_req);
-
-    cJSON *append_req = cJSON_CreateObject();
-    cJSON_AddStringToObject(append_req, "type", "input_text_buffer.append");
-    cJSON_AddStringToObject(append_req, "text", "你好呀！我是阿里云的实时语音合成。阿里云的大模型服务平台百炼是一站式的大模型开发及应用构建平台。不论是开发者还是业务人员，都能深入参与大模型应用的设计和构建。");
-    ws_send_json(client, append_req);
-
-    cJSON *finish_req = cJSON_CreateObject();
-    cJSON_AddStringToObject(finish_req, "type", "session.finish");
-    ws_send_json(client, finish_req);
-
-    xSemaphoreTake(tts_done_sem, portMAX_DELAY);
-    esp_websocket_client_stop(client);
-    esp_websocket_client_destroy(client);
-    is_ai_busy = false;
-    vTaskDelete(NULL);
-}
-
-static void short_press_btn1(int gpio)
-{
-    if (is_ai_busy) { ESP_LOGW(TAG, "System is busy..."); return; }
-    ESP_LOGI(TAG, "Button 1 Trigger: Start Ali TTS Task");
-    static StackType_t *tts_stack = NULL;
-    static StaticTask_t tts_tcb;
-    if (tts_stack == NULL) { tts_stack = (StackType_t *)heap_caps_malloc(1024 * 16, MALLOC_CAP_SPIRAM); }
-    if (tts_stack != NULL) { xTaskCreateStatic(ali_realtime_tts_task, "ali_tts_task", 1024 * 16, NULL, 5, tts_stack, &tts_tcb); }
-}
-#endif
-/* ------------------ 【业务三结束】 ------------------ */
-
-
-/* =====================================================================
- * 唤醒词与音频采集逻辑
+ * 语音唤醒与音频采集上传至服务器
  * ===================================================================== */
 
 #define MAX_REC_SIZE (2 * 1024 * 1024) 
@@ -547,143 +428,125 @@ static int rec_len = 0;
 static SemaphoreHandle_t voice_done_sem = NULL;
 
 static volatile int voice_chat_stage = 0; 
-static esp_websocket_client_handle_t voice_ws_client = NULL;
 
-// 检查连接
-bool is_ws_connected(esp_websocket_client_handle_t client) {
-    return (client != NULL) && esp_websocket_client_is_connected(client);
-}
-
-// 分片上传二进制流 (完全匹配 C# 的 1024 字节分片与 100ms 间隔)
-static void ws_asr_upload_binary(esp_websocket_client_handle_t client, int16_t *data, int len) {
-    if (!client || len <= 0 || data == NULL) return;
-    print_now("ASR: 开启极速推流模式...");
-    char *ptr = (char *)data;
-    
-    // 增大分片至 4096 字节，提高单次发送效率
-    const int chunk_size = 4096; 
-    for (int i = 0; i < len; i += chunk_size) {
-        if (!is_ws_connected(client)) break;
-        int sz = (len - i < chunk_size) ? (len - i) : chunk_size;
-        
-        // 发送二进制数据
-        esp_websocket_client_send_bin(client, ptr + i, sz, pdMS_TO_TICKS(100));
-        
-        // 这将使上传速度提升约 20 倍
-        vTaskDelay(pdMS_TO_TICKS(5)); 
-    }
-    print_now("ASR: 数据已全速发送完毕");
-}
-
-// WebSocket 回调打印识别结果
-static void voice_chat_ws_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
-    esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
-    if (event_id == WEBSOCKET_EVENT_CONNECTED) {
-        ESP_LOGI(TAG, "ASR WebSocket 握手成功");
-        if (ws_event_group) xEventGroupSetBits(ws_event_group, WS_CONNECTED_BIT);
-    } else if (event_id == WEBSOCKET_EVENT_DATA && data->op_code == 0x01) {
-        // 建议在这里只解析最终结果，减少串口刷屏
-        printf("\n[ASR 回传] >>> %.*s\n", data->data_len, (char *)data->data_ptr);
-    }
-}
-
-// ASR 识别任务主体
-static void ali_voice_chat_task(void *pvParameters) {
-    print_now("ASR任务：启动");
+// 对接 Java 后端的语音交互任务
+static void server_voice_chat_task(void *pvParameters) {
+    print_now("语音唤醒任务：启动");
     is_ai_busy = true;
     voice_chat_stage = 1; 
     rec_len = 0;
 
-    if (ws_event_group == NULL) ws_event_group = xEventGroupCreate();
-    xEventGroupClearBits(ws_event_group, WS_CONNECTED_BIT);
     if (voice_done_sem == NULL) voice_done_sem = xSemaphoreCreateBinary();
     xSemaphoreTake(voice_done_sem, 0); 
 
+    // 分配音频缓冲区
     rec_buffer = (int16_t *)heap_caps_malloc(MAX_REC_SIZE, MALLOC_CAP_SPIRAM);
     if (!rec_buffer) { ESP_LOGE(TAG, "内存分配失败"); is_ai_busy = false; vTaskDelete(NULL); return; }
 
     print_now(">>> [录制中] 请开始说话...");
-    // 等待用户说完
-    xSemaphoreTake(voice_done_sem, pdMS_TO_TICKS(10000)); 
+    // 等待麦克风任务判定静音后释放信号
+    xSemaphoreTake(voice_done_sem, pdMS_TO_TICKS(15000)); 
 
-    print_now("录音结束，闪电连接服务器...");
+    print_now("录音结束，正在上传至服务器...");
     voice_chat_stage = 2; 
 
-    esp_websocket_client_config_t ws_cfg = {
-        .uri = "wss://dashscope.aliyuncs.com/api-ws/v1/inference/",
-        .buffer_size = 8192, // 增大缓冲区
-        .crt_bundle_attach = esp_crt_bundle_attach,
+    // 确保 SSE 解析所需的全局 Buffer 已分配
+    if (!stream_rx_buffer) {
+        stream_rx_buffer = (char *)heap_caps_malloc(STREAM_BUFFER_SIZE, MALLOC_CAP_SPIRAM);
+    }
+    stream_rx_len = 0;
+
+    // 构建 Multipart 表单
+    const char *boundary = "Esp32Boundary123456789";
+    char header[256];
+    int header_len = snprintf(header, sizeof(header),
+        "--%s\r\n"
+        "Content-Disposition: form-data; name=\"file\"; filename=\"voice.pcm\"\r\n"
+        "Content-Type: application/octet-stream\r\n\r\n", boundary);
+
+    char footer[64];
+    int footer_len = snprintf(footer, sizeof(footer), "\r\n--%s--\r\n", boundary);
+
+    int total_len = header_len + rec_len + footer_len;
+
+    esp_http_client_config_t config = {
+        .url = "http://8.137.121.189:8080/ai/analyText-stream",
+        .method = HTTP_METHOD_POST,
+        .timeout_ms = 60000, 
+        .buffer_size = 4096,
+        .buffer_size_tx = 4096,
     };
 
-    voice_ws_client = esp_websocket_client_init(&ws_cfg);
-    char auth_header[128];
-    snprintf(auth_header, sizeof(auth_header), "Bearer %s", API_KEY);
-    esp_websocket_client_append_header(voice_ws_client, "Authorization", auth_header);
-    esp_websocket_register_events(voice_ws_client, WEBSOCKET_EVENT_ANY, voice_chat_ws_event_handler, NULL);
-    esp_websocket_client_start(voice_ws_client);
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+    char content_type[128];
+    snprintf(content_type, sizeof(content_type), "multipart/form-data; boundary=%s", boundary);
+    esp_http_client_set_header(client, "Content-Type", content_type);
 
-    EventBits_t bits = xEventGroupWaitBits(ws_event_group, WS_CONNECTED_BIT, pdFALSE, pdTRUE, pdMS_TO_TICKS(5000));
-    if (bits & WS_CONNECTED_BIT) {
-        // 构建 run-task 配置帧
-        cJSON *start = cJSON_CreateObject();
-        cJSON *head = cJSON_CreateObject();
-        cJSON_AddStringToObject(head, "action", "run-task");
-        cJSON_AddStringToObject(head, "task_id", "esp32_fast_asr");
-        cJSON_AddStringToObject(head, "streaming", "duplex");
-        cJSON_AddItemToObject(start, "header", head);
+    esp_err_t err = esp_http_client_open(client, total_len);
+    if (err == ESP_OK) {
+        // 1. 发送 Multipart 头
+        esp_http_client_write(client, header, header_len);
+        
+        // 2. 分块上传录音文件数据
+        int remaining = rec_len;
+        uint8_t *ptr = (uint8_t *)rec_buffer;
+        while (remaining > 0) {
+            int to_write = (remaining > 4096) ? 4096 : remaining;
+            esp_http_client_write(client, (char *)ptr, to_write);
+            ptr += to_write;
+            remaining -= to_write;
+            vTaskDelay(pdMS_TO_TICKS(1)); // 让出 CPU 防止看门狗复位
+        }
+        
+        // 3. 发送 Multipart 尾部
+        esp_http_client_write(client, footer, footer_len);
+        
+        // 4. 获取服务器响应头
+        esp_http_client_fetch_headers(client);
+        print_now("上传完成，等待服务器推送 SSE 语音流...");
 
-        cJSON *payload = cJSON_CreateObject();
-        cJSON_AddStringToObject(payload, "task_group", "audio");
-        cJSON_AddStringToObject(payload, "task", "asr");
-        cJSON_AddStringToObject(payload, "function", "recognition");
-        cJSON_AddStringToObject(payload, "model", "fun-asr-realtime");
-        
-        cJSON *params = cJSON_CreateObject();
-        cJSON_AddStringToObject(params, "format", "pcm");
-        cJSON_AddNumberToObject(params, "sample_rate", 16000);
-        cJSON_AddItemToObject(payload, "parameters", params);
-        cJSON_AddObjectToObject(payload, "input"); 
-        cJSON_AddItemToObject(start, "payload", payload);
-
-        char *js = cJSON_PrintUnformatted(start);
-        esp_websocket_client_send_text(voice_ws_client, js, strlen(js), pdMS_TO_TICKS(500));
-        free(js); cJSON_Delete(start);
-        
-        // 减小等待开始的时间，阿里支持立即发送音频
-        vTaskDelay(pdMS_TO_TICKS(50)); 
-
-        // 全速上传音频
-        ws_asr_upload_binary(voice_ws_client, rec_buffer, rec_len);
-        
-        // 发送结束帧
-        esp_websocket_client_send_text(voice_ws_client, "{\"header\":{\"action\":\"finish-task\",\"task_id\":\"esp32_fast_asr\",\"streaming\":\"duplex\"},\"payload\":{\"input\":{}}}", 130, pdMS_TO_TICKS(500));
-        
-        print_now("正在获取最终识别结果...");
-        vTaskDelay(pdMS_TO_TICKS(2000)); 
+        // 5. 循环读取 SSE 数据，复用 _test_http_event_handler 解析并播放
+        char chunk[1024];
+        while (1) {
+            int read_len = esp_http_client_read(client, chunk, sizeof(chunk));
+            if (read_len > 0) {
+                // 手动构造 HTTP_EVENT_ON_DATA 事件，喂给现有的 SSE 解析器
+                esp_http_client_event_t evt = {
+                    .event_id = HTTP_EVENT_ON_DATA,
+                    .data = chunk,
+                    .data_len = read_len
+                };
+                _test_http_event_handler(&evt);
+            } else if (read_len <= 0) {
+                break; // 连接结束或异常
+            }
+        }
+        print_now("语音流接收完毕");
+    } else {
+        ESP_LOGE(TAG, "连接服务器失败");
     }
 
-    if (voice_ws_client) {
-        esp_websocket_client_stop(voice_ws_client);
-        esp_websocket_client_destroy(voice_ws_client);
-        voice_ws_client = NULL;
-    }
+    // 清理资源
+    esp_http_client_cleanup(client);
     if (rec_buffer) { free(rec_buffer); rec_buffer = NULL; }
+    if (stream_rx_buffer) { free(stream_rx_buffer); stream_rx_buffer = NULL; }
     voice_chat_stage = 0;
     is_ai_busy = false;
-    print_now("会话清理完成");
+    print_now("语音唤醒业务已释放");
     vTaskDelete(NULL);
 }
 
-// 唤醒回调启动 ASR 任务
+// 唤醒词回调
 static void wake_word_cb(void) {
     ESP_LOGI(TAG, "唤醒识别！");
     if (!is_ai_busy) {
-        xTaskCreate(ali_voice_chat_task, "voice_chat", 8192, NULL, 5, NULL);
+        // 创建连接 Java 服务器的任务 (使用较大的堆栈防止网络交互溢出)
+        xTaskCreate(server_voice_chat_task, "voice_chat", 1024 * 16, NULL, 5, NULL);
     }
     sr_wake_resume();
 }
 
-// 麦克风采集：录音与唤醒喂数并行
+// 麦克风采集任务：录音与唤醒喂数并行
 static void mic_read_task(void *pvParameters) {
     int chunk_size = sr_get_feed_chunk_size();
     int buffer_len = chunk_size * sizeof(int16_t);
@@ -705,7 +568,7 @@ static void mic_read_task(void *pvParameters) {
                 if (energy < 450) silence_counter++;
                 else silence_counter = 0;
 
-                // 你说完话后大约 400ms 就会自动停止录音并开始上传
+                // 约 400ms 检测到静音后停止录制，触发上传
                 if (silence_counter > 25 && rec_len > 8000) {
                     xSemaphoreGive(voice_done_sem); 
                     silence_counter = 0;
@@ -728,15 +591,12 @@ void app_entry(void)
     xTaskCreatePinnedToCore(mic_read_task, "mic_task", 1024 * 4, NULL, 5, NULL, 0); 
     esp_wifi_set_ps(WIFI_PS_NONE);
 
-    // 按键 1 配置
-    bsp_button_config_t cfg1 = { .gpio_num = IO0_1, .active_level = 0, .getlevel_cb = get_button_level, .short_cb = short_press_btn1 };
-    button_event_set(&cfg1);
 
-    // 按键 2 配置
+    // 按键 2 配置 (Omni)
     bsp_button_config_t cfg2 = { .gpio_num = IO0_2, .active_level = 0, .getlevel_cb = get_button_level, .short_cb = short_press_btn2 };
     button_event_set(&cfg2);
 
-    // 按键 3 配置
+    // 按键 3 配置 (纯文本上传)
     bsp_button_config_t cfg3 = { .gpio_num = IO0_3, .active_level = 0, .getlevel_cb = get_button_level, .short_cb = short_press_btn3 };
     button_event_set(&cfg3);
 
