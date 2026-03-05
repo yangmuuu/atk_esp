@@ -10,11 +10,15 @@
 static const char *TAG = "CAMERA";
 
 // 分辨率设置 (QVGA最稳)
-#define CAM_WIDTH       320
-#define CAM_HEIGHT      240
-#define CAM_FPS         15
-#define CAM_BUF_SIZE    (25 * 1024)
-#define CAM_FRAME_MAX   (30 * 1024)
+// 320
+#define CAM_WIDTH       1280
+// 240
+#define CAM_HEIGHT      720
+#define CAM_FPS         10
+// 25
+#define CAM_BUF_SIZE    (64 * 1024)
+// 30
+#define CAM_FRAME_MAX   (150 * 1024)
 
 static uint8_t *xfer_buf_a = NULL;
 static uint8_t *xfer_buf_b = NULL;
