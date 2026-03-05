@@ -226,7 +226,7 @@ static void image_analysis_task(void *pvParameters)
         print_now("图像业务: 图片上传完成，等待解析并接收语音流...");
 
         // 手动拉取 HTTP 响应并注入到共享 SSE 解析器中
-        char chunk[1024];
+        char chunk[4096];
         while (1) {
             int read_len = esp_http_client_read(client, chunk, sizeof(chunk));
             if (read_len > 0) {
@@ -357,7 +357,7 @@ static void voice_analysis_task(void *pvParameters) {
     // 等待麦克风采集任务中的 VAD(静音检测) 发出结束信号
     xSemaphoreTake(voice_done_sem, pdMS_TO_TICKS(15000)); 
 
-    print_now("语音业务: 录音结束，连接 Java 服务器...");
+    print_now("语音业务: 录音结束，连接服务器...");
     voice_record_stage = 2; 
 
     if (!stream_rx_buffer) {
@@ -407,7 +407,7 @@ static void voice_analysis_task(void *pvParameters) {
         
         esp_http_client_write(client, footer, footer_len);
         esp_http_client_fetch_headers(client);
-        print_now("语音业务: 录音上传完成，等待服务器推送 SSE 语音流...");
+        print_now("语音业务: 录音上传完成，等待服务器推送语音流...");
 
         // 接收 SSE 音频流并注入共享解析器
         char chunk[1024];

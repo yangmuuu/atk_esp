@@ -30,11 +30,10 @@ esp_err_t audio_init(void)
     ESP_LOGI(TAG, "Initializing Speaker I2S...");
 
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_1, I2S_ROLE_MASTER);
-    chan_cfg.auto_clear_after_cb = true; 
-    
-    // 适量的 DMA 缓存，防止卡顿且不占满内存
-    chan_cfg.dma_desc_num = 6;     // 6
-    chan_cfg.dma_frame_num = 1024;  // 1024
+
+    chan_cfg.auto_clear = true;  
+    chan_cfg.dma_desc_num = 8;     
+    chan_cfg.dma_frame_num = 1024; 
 
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &tx_handle, NULL));
 
@@ -64,6 +63,7 @@ esp_err_t audio_init(void)
 
     return ESP_OK;
 }
+
 
 // 初始化麦克风 (PDM 格式)
 esp_err_t mic_init(void)
