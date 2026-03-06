@@ -42,10 +42,14 @@ void app_main(void)
         return;
     }
 
+	app_ui_init();
+
     // 初始化WiFi
     ESP_LOGI(TAG, "初始化: WiFi");
     wifi_init_portal();
     wifi_wait_for_ip();
+
+	app_ui_update_text("camera init...");
 
     // 初始化摄像头
     ESP_LOGI(TAG, "初始化: Camera");
@@ -54,6 +58,8 @@ void app_main(void)
     } else {
         ESP_LOGE(TAG, "摄像头初始化失败");
     }
+
+	app_ui_update_text("ai audio init...");
 
     // 主循环
     app_entry();

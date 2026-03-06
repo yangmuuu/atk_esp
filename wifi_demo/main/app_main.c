@@ -20,6 +20,7 @@
 #include "audio.h"      
 #include "esp_wifi.h"
 #include "sr.h"
+#include "esp_mac.h"
 
 static const char *TAG = "APP_MAIN";
 
@@ -36,6 +37,9 @@ static volatile uint16_t xl9555_button_level = 0xFFFF;
 #define STREAM_BUFFER_SIZE (500 * 1024)
 static char *stream_rx_buffer = NULL;
 static int stream_rx_len = 0;
+
+static char g_device_id[13] = {0}; // 全局mac唯一地址
+static lv_obj_t *g_status_label = NULL; // 屏幕显示文字
 
 /* =====================================================================
  * 基础工具函数
@@ -63,14 +67,23 @@ static void screen_touch_cb(lv_event_t * e) {
 }
 
 // 初始化 LVGL 基本 UI
-static void app_ui_init(void) {
+void app_ui_init(void) {
     if (lvgl_port_lock(0)) {
         lv_obj_set_style_bg_color(lv_scr_act(), lv_color_hex(0x000000), LV_PART_MAIN);
-        lv_obj_t * label = lv_label_create(lv_scr_act());
-        lv_label_set_text(label, "Omni Device\nReady...");
-        lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
-        lv_obj_center(label);
+        // 👇 这里改用全局变量，并修改初始文本
+        g_status_label = lv_label_create(lv_scr_act());
+        lv_label_set_text(g_status_label, "wifi init..."); 
+        
+        lv_obj_set_style_text_color(g_status_label, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_center(g_status_label);
         lv_obj_add_event_cb(lv_scr_act(), screen_touch_cb, LV_EVENT_CLICKED, NULL);
+        lvgl_port_unlock();
+    }
+}
+// 更新屏幕文字
+void app_ui_update_text(const char *text) {
+    if (g_status_label != NULL && lvgl_port_lock(0)) {
+        lv_label_set_text(g_status_label, text);
         lvgl_port_unlock();
     }
 }
@@ -447,7 +460,7 @@ static void wake_word_cb(void) {
     sr_wake_resume(); // 恢复下一次唤醒监听
 }
 
-// 底层麦克风 I2S 采集与唤醒词识别引擎 (常驻任务)
+// 底层麦克风 I2S 采集与唤醒词识别引擎
 static void mic_read_task(void *pvParameters) {
     int chunk_size = sr_get_feed_chunk_size();
     int buffer_len = chunk_size * sizeof(int16_t);
@@ -480,7 +493,7 @@ static void mic_read_task(void *pvParameters) {
                     silence_counter = 0;
                 }
             }
-            // 【核心】不间断地将麦克风数据喂给唤醒词引擎
+            // 不间断地将麦克风数据喂给唤醒词引擎
             sr_wakeup_feed(audio_chunk); 
         }
     }
@@ -493,6 +506,16 @@ static void mic_read_task(void *pvParameters) {
 void app_entry(void)
 {
     ESP_LOGI(TAG, "Starting Omni Device System...");
+
+
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA); 
+    snprintf(g_device_id, sizeof(g_device_id), "%02X%02X%02X%02X%02X%02X", 
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+             
+    ESP_LOGI(TAG, "========================================");
+    ESP_LOGI(TAG, "MAC ADDR: %s", g_device_id);
+    ESP_LOGI(TAG, "========================================");
     
     // 初始化核心外设
     ESP_ERROR_CHECK(audio_init()); 
@@ -514,7 +537,7 @@ void app_entry(void)
     button_event_set(&cfg3);
 
     // 屏幕与 UI 初始化
-    app_ui_init();
+    app_ui_update_text("init ok");
     
     ESP_LOGI(TAG, "Entering System Main Loop");
     while (1) { 

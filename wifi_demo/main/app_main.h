@@ -6,3 +6,6 @@ void app_xl9555_input_cb(uint16_t io_num, int level);
 
 // 业务主入口
 void app_entry(void);
+
+void app_ui_init(void);
+void app_ui_update_text(const char *text);
